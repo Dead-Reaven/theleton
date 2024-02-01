@@ -22,7 +22,7 @@ def write_data(data):
         json.dump(data, f)
 
 # Function to increase the counter for a rule
-def increase_counter(field):
+async def call(field):
     check_date(field)  # Check if the counter needs to be reset
     data = read_data()
     rule = data.get(field)
@@ -30,7 +30,7 @@ def increase_counter(field):
     if not rule:
         raise ValueError(f"No rule found for {field}")
     if rule['counter'] + 1 > rule['max_value']:
-        raise ErrorLimitCall(f"Error: called {field} too many request per limit! log:\n {data} ")
+        raise ErrorLimitCall(f"Error: called {field} too many times per limit! log:\n {data} ")
     rule['counter'] += 1
     write_data(data)
 
@@ -40,7 +40,7 @@ def clear_counter(field):
     rule = data.get(field)
     if rule:
         rule['counter'] = 0
-        rule['date_to_update'] = str(datetime.datetime.now() + datetime.timedelta(hours=rule['max_date']))
+        rule['date_to_update'] = str(datetime.datetime.now() + datetime.timedelta(minutes=rule['max_date']))
         write_data(data)
 
 # Function to check if the counter for a rule needs to be reset
@@ -61,14 +61,17 @@ def add_rule(field, max_value, max_date):
         data[field] = {
             'counter': 0,
             'max_value': max_value,
-            'date_to_update': str(datetime.datetime.now() + datetime.timedelta(hours=max_date)),
+            'date_to_update': str(datetime.datetime.now() + datetime.timedelta(minutes=max_date)),
             'max_date': max_date
         }
         write_data(data)
 
 # Usage
-
 print("now:", str(datetime.datetime.now()))
-add_rule('a1', 3, 0.1)
+# add_rule('a1', 3, 1)  # Add a new rule if it doesn't exist
 
-increase_counter('a1')
+# try:
+#     increase_counter('a1')  # Increase the counter by one for 'a1'
+#     print(read_data())  # Print the current data
+# except ErrorLimitCall as e:
+#     print(str(e))  # Print the error message if a limit error occurs

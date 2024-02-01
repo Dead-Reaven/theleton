@@ -11,7 +11,18 @@ api_id = ''
 api_hash = ''
 phone_number = ''
 
+rules = {
+    "message" : 'send_message',
+    "invate" : 'send_invate',
+}
+
+spam.add_rule(rules["message"], 30, 1) # to different users per minute
+spam.add_rule(rules["invate"], 100, 60 * 24) # invate per day
+
+
+
 client = TelegramClient(phone_number, api_id, api_hash)
+
 
 async def handle_usernames(event):
     args = event.message.message.split()[1:]
@@ -31,21 +42,23 @@ async def handle_usernames(event):
         sleep(3)
         try:
             user = await client.get_entity(username)
+            #? invate call
             if isinstance(group, Channel):
+                await spam.call(rules["invate"])
                 await client(InviteToChannelRequest(target_group_entity, [user]))
             elif isinstance(group, Chat):
+                spam.call(rules["invate"])
                 await client(AddChatUserRequest(chat_id=group.id, user_id=user, fwd_limit=10))
+            #? invate call
+
             await event.respond(f"{username} has been added. Waiting for 10-30 seconds...")
             sleep(random.randrange(10, 30))
 
-        except ValueError:
-            await event.respond(f"Cannot find: {username}")
+        except ValueError as e:
+            await event.respond(f"Cannot find: {username} --- {e}")
         #! errors with privacy
         except PeerFloodError:
-            await event.respond(
-                f"{username} Getting flood error from telegram.
-                Invating is soping now. Please, try run later.
-                Reccomend await 1-3 hour or better one day to prevent ban")
+            await event.respond(f"{username} Getting flood error from telegram. Invating is soping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
             await client.disconnect()
             print("peer flood error")
             exit(1)
