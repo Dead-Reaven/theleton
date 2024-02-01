@@ -5,10 +5,11 @@ from telethon.errors.rpcerrorlist import PeerFloodError, UserPrivacyRestrictedEr
 from telethon.tl.types import InputPeerChannel, InputPeerChat, Channel, Chat
 from time import sleep
 import random
+import spam
 
-api_id = '25972343'
-api_hash = 'b63ab3e95f8967da1fb862688c2316c5'
-phone_number = '+380978012740'
+api_id = ''
+api_hash = ''
+phone_number = ''
 
 client = TelegramClient(phone_number, api_id, api_hash)
 
