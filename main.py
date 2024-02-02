@@ -7,9 +7,9 @@ from time import sleep
 import random
 import spam
 
-api_id = ''
-api_hash = ''
-phone_number = ''
+api_id = '20921653'
+api_hash = '4f70d910d762a37ae6703e370f861a7a'
+phone_number = '+380501061373'
 
 rules = {
     "message" : 'send_message',
@@ -18,7 +18,6 @@ rules = {
 
 spam.add_rule(rules["message"], 30, 1) # to different users per minute
 spam.add_rule(rules["invate"], 100, 60 * 24) # invate per day
-
 
 
 client = TelegramClient(phone_number, api_id, api_hash)
@@ -47,7 +46,7 @@ async def handle_usernames(event):
                 await spam.call(rules["invate"])
                 await client(InviteToChannelRequest(target_group_entity, [user]))
             elif isinstance(group, Chat):
-                spam.call(rules["invate"])
+                await spam.call(rules["invate"])
                 await client(AddChatUserRequest(chat_id=group.id, user_id=user, fwd_limit=10))
             #? invate call
 
@@ -56,12 +55,13 @@ async def handle_usernames(event):
 
         except ValueError as e:
             await event.respond(f"Cannot find: {username} --- {e}")
+
         #! errors with privacy
         except PeerFloodError:
             await event.respond(f"{username} Getting flood error from telegram. Invating is soping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
-            await client.disconnect()
+            await stop(event)
             print("peer flood error")
-            exit(1)
+
 
         except UserPrivacyRestrictedError:
             await event.respond("The user's privacy settings do not allow you to do this. Skipping.")
@@ -69,9 +69,9 @@ async def handle_usernames(event):
 
         except Exception as e:
             await event.respond(f"Unexpected error at user: [{username}]. --- {e} --- server disconected")
-            await client.disconnect()
+            await stop(event)
             print(e)
-            exit(1)
+
 
     await event.respond(f"You entered these usernames: {users}")
 
@@ -106,12 +106,17 @@ async def create_channel(event):
 async def message_checker(event):
     print(event.message.message)
 
+async def stop(event):
+        await client.disconnect()
+
 async def main():
     await client.start()
     client.add_event_handler(message_checker, events.NewMessage())
-    client.add_event_handler(handle_usernames, events.NewMessage(pattern="/add"))
-    client.add_event_handler(create_group, events.NewMessage(pattern="/create_group"))
-    client.add_event_handler(create_channel, events.NewMessage(pattern="/create_channel"))
+    client.add_event_handler(stop, events.NewMessage(pattern='/stop'))
+
+    # client.add_event_handler(handle_usernames, events.NewMessage(pattern="/add"))
+    # client.add_event_handler(create_group, events.NewMessage(pattern="/create_group"))
+    # client.add_event_handler(create_channel, events.NewMessage(pattern="/create_channel"))
 
     print("Server is running...")
     await client.run_until_disconnected()

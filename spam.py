@@ -22,7 +22,7 @@ def write_data(data):
         json.dump(data, f)
 
 # Function to increase the counter for a rule
-async def call(field):
+def call(field):
     check_date(field)  # Check if the counter needs to be reset
     data = read_data()
     rule = data.get(field)
@@ -68,10 +68,10 @@ def add_rule(field, max_value, max_date):
 
 # Usage
 print("now:", str(datetime.datetime.now()))
-# add_rule('a1', 3, 1)  # Add a new rule if it doesn't exist
+add_rule('send_invate', 3, 1)  # Add a new rule if it doesn't exist
 
-# try:
-#     increase_counter('a1')  # Increase the counter by one for 'a1'
-#     print(read_data())  # Print the current data
-# except ErrorLimitCall as e:
-#     print(str(e))  # Print the error message if a limit error occurs
+try:
+    call('send_invate')  # Increase the counter by one for 'a1'
+    print(read_data())  # Print the current data
+except ErrorLimitCall as e:
+    print(str(e))  # Print the error message if a limit error occurs
