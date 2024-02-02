@@ -8,8 +8,9 @@ from telethon.tl.types import InputPeerChannel, InputPeerChat, Channel, Chat
 from time import sleep
 import random
 #* custom modules
-from shared import rules, stop
-import spam
+
+from spam import Rules, call, ErrorLimitCall
+
 
 async def handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
@@ -31,10 +32,10 @@ async def handle_usernames(event: NewMessage.Event, client: TelegramClient):
             user = await client.get_entity(username)
             #? invate call
             if isinstance(group, Channel):
-                await spam.call(rules["invate"])
+                await call(Rules.invate)
                 await client(InviteToChannelRequest(target_group_entity, [user]))
             elif isinstance(group, Chat):
-                await spam.call(rules["invate"])
+                await call(Rules.invate)
                 await client(AddChatUserRequest(chat_id=group.id, user_id=user, fwd_limit=10))
             #? invate call
 
@@ -87,3 +88,60 @@ async def create_channel(event: NewMessage.Event, client: TelegramClient):
 
     # Respond with the created channel's ID
     await event.respond(f"Channel '{channel_name}' created with ID {result.chats[0].id}")
+
+
+async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient):
+    args = event.message.message.split()[1:]
+    group_name = args[0]
+    users = args[1:]
+
+    added_users = []
+    not_added_users = args[1:]
+
+    for username in users:
+        sleep(3)
+        try:
+            await call(
+                Rules.get_entity,
+                lambda: event.respond(f"{username} has been added. Waiting for 2-5 seconds...")
+            )
+            added_users.append(not_added_users.pop(0))
+            sleep(random.randrange(2, 10))
+
+        except ValueError as e:
+            await event.respond(f"Cannot find: {username} --- {e};")
+
+
+        #! errors with privacy
+        except PeerFloodError:
+            await event.respond(f"{username} Getting flood error from telegram. Invating is stoping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
+            await event.respond(f"not added users: {not_added_users}")
+            await stop(event)
+            print("peer flood error")
+
+
+        except UserPrivacyRestrictedError:
+            await event.respond("The user's privacy settings do not allow you to do this. Skipping.")
+            await event.respond(f"not added users: {not_added_users}")
+
+            print("error user privacy restricted. Skip")
+
+        except ErrorLimitCall as e:
+            await event.respond(f"[{username}]: {e}")
+            await event.respond(f"not added users: {not_added_users}")
+
+            break
+
+        except Exception as e:
+            await event.respond(f"Unexpected error at user: [{username}]. --- {e} --- server disconected")
+            await event.respond(f"not added users: {not_added_users}")
+            await stop(event, client)
+            print(e)
+
+
+    await event.respond(f"You entered these usernames: {added_users}")
+
+
+async def stop(event, client):
+    await client.disconnect()
+

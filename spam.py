@@ -4,6 +4,11 @@ import datetime
 # Path to your JSON file
 json_file = 'data.json'
 
+class Rules:
+  message = 'send_message'
+  invate = 'send_invate'
+  get_entity = 'get_entity'
+
 # Custom exception class for limit errors
 class ErrorLimitCall(Exception):
     pass
@@ -22,7 +27,7 @@ def write_data(data):
         json.dump(data, f)
 
 # Function to increase the counter for a rule
-def call(field):
+async def call(field, callback):
     check_date(field)  # Check if the counter needs to be reset
     data = read_data()
     rule = data.get(field)
@@ -30,8 +35,9 @@ def call(field):
     if not rule:
         raise ValueError(f"No rule found for {field}")
     if rule['counter'] + 1 > rule['max_value']:
-        raise ErrorLimitCall(f"Error: called {field} too many times per limit! log:\n {data} ")
+        raise ErrorLimitCall(f"Error: called {field} too many times per limit!\ntry after:{rule['date_to_update']}")
     rule['counter'] += 1
+    await callback()
     write_data(data)
 
 # Function to reset the counter for a rule
@@ -68,13 +74,3 @@ def add_rule(field, max_value, max_date):
 
 # Usage
 print("now:", str(datetime.datetime.now()))
-
-
-#! testing usage
-# add_rule('send_invate', 3, 1)  # Add a new rule if it doesn't exist
-
-# try:
-#     call('send_invate')  # Increase the counter by one for 'a1'
-#     print(read_data())  # Print the current data
-# except ErrorLimitCall as e:
-#     print(str(e))  # Print the error message if a limit error occurs
