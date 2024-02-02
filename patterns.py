@@ -1,29 +1,14 @@
-from telethon import TelegramClient, events
 from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest
 from telethon.tl.functions.messages import CreateChatRequest, AddChatUserRequest
 from telethon.errors.rpcerrorlist import PeerFloodError, UserPrivacyRestrictedError
 from telethon.tl.types import InputPeerChannel, InputPeerChat, Channel, Chat
 from time import sleep
 import random
+#* custom modules
+from shared import rules, stop
 import spam
 
-api_id = '20921653'
-api_hash = '4f70d910d762a37ae6703e370f861a7a'
-phone_number = '+380501061373'
-
-rules = {
-    "message" : 'send_message',
-    "invate" : 'send_invate',
-}
-
-spam.add_rule(rules["message"], 30, 1) # to different users per minute
-spam.add_rule(rules["invate"], 100, 60 * 24) # invate per day
-
-
-client = TelegramClient(phone_number, api_id, api_hash)
-
-
-async def handle_usernames(event):
+async def handle_usernames(event, client):
     args = event.message.message.split()[1:]
     group_name = args[0]
     users = args[1:]
@@ -75,7 +60,7 @@ async def handle_usernames(event):
 
     await event.respond(f"You entered these usernames: {users}")
 
-async def create_group(event):
+async def create_group(event, client):
     args = event.message.message.split()[1:]
     group_name = args[0]
     users = args[1:]
@@ -85,9 +70,7 @@ async def create_group(event):
 
     await event.respond(f"Group '{group_name}' created with ID {newChat.chats[0].id}")
 
-
-
-async def create_channel(event):
+async def create_channel(event, client):
     args = event.message.message.split()[1:]
     channel_name = args[0]
     about = ' '.join(args[1:])  # The rest of the arguments will be the channel's about text
@@ -101,25 +84,3 @@ async def create_channel(event):
 
     # Respond with the created channel's ID
     await event.respond(f"Channel '{channel_name}' created with ID {result.chats[0].id}")
-
-
-async def message_checker(event):
-    print(event.message.message)
-
-async def stop(event):
-        await client.disconnect()
-
-async def main():
-    await client.start()
-    client.add_event_handler(message_checker, events.NewMessage())
-    client.add_event_handler(stop, events.NewMessage(pattern='/stop'))
-
-    # client.add_event_handler(handle_usernames, events.NewMessage(pattern="/add"))
-    # client.add_event_handler(create_group, events.NewMessage(pattern="/create_group"))
-    # client.add_event_handler(create_channel, events.NewMessage(pattern="/create_channel"))
-
-    print("Server is running...")
-    await client.run_until_disconnected()
-
-with client:
-    client.loop.run_until_complete(main())
