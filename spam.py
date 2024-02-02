@@ -27,7 +27,7 @@ def write_data(data):
         json.dump(data, f)
 
 # Function to increase the counter for a rule
-async def call(field, callback):
+async def call(field, callback, is_async = False):
     check_date(field)  # Check if the counter needs to be reset
     data = read_data()
     rule = data.get(field)
@@ -37,7 +37,9 @@ async def call(field, callback):
     if rule['counter'] + 1 > rule['max_value']:
         raise ErrorLimitCall(f"Error: called {field} too many times per limit!\ntry after:{rule['date_to_update']}")
     rule['counter'] += 1
-    await callback()
+
+    await callback() if is_async else callback()
+
     write_data(data)
 
 # Function to reset the counter for a rule

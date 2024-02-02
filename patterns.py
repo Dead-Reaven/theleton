@@ -11,6 +11,10 @@ import random
 
 from spam import Rules, call, ErrorLimitCall
 
+#per each iteration
+min_time_wait = 2
+max_time_wait = 5
+sleep_time = 3
 
 async def handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
@@ -90,24 +94,38 @@ async def create_channel(event: NewMessage.Event, client: TelegramClient):
     await event.respond(f"Channel '{channel_name}' created with ID {result.chats[0].id}")
 
 
+
+
 async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
+
     group_name = args[0]
+
     users = args[1:]
 
     added_users = []
     lost_users = args[1:]
+    l = len(users)
+    #calc minuts
+    min_t = (min_time_wait * l + sleep_time * l) / 60
+    max_t = (max_time_wait*l + sleep_time * l) / 60
 
+    msg = f"""Request to add {users}
+    please wait: {round(min_t, 1)} - {round(max_t, 1)} mins"""
+
+    await event.respond(msg)
     for username in users:
-        sleep(3)
+        sleep(sleep_time)
         try:
-            await call(
-                Rules.get_entity,
-                lambda: event.respond(f"{username} has been added. Waiting for 2-5 seconds...")
-            )
+            #! write you solution here!
+            # await call(
+            #     Rules.get_entity,
+            #     lambda : print(f"{username} has been added. Waiting for 2-5 seconds...")
+            # )
+
             added_users.append(username)
             lost_users.remove(username)
-            sleep(random.randrange(2, 10))
+            sleep(random.randrange(min_time_wait, max_time_wait))
 
         #* skip on value error
         except ValueError as e:
@@ -138,9 +156,10 @@ async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient)
             await stop(event, client)
             print(e)
 
+    #*finally massage responce
     msg = f"""
-    Succesefuly invited these usernames: {added_users}\n
-    {lost_users if lost_users.__len__() > 0 else "No lost users" }
+    Succesefuly invited these usernames: {added_users}
+    lost: {lost_users if lost_users.__len__() > 0 else "No lost users" }
     added:{added_users.__len__()}; lost:{lost_users.__len__()} """
     await event.respond(msg)
 
