@@ -96,7 +96,7 @@ async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient)
     users = args[1:]
 
     added_users = []
-    not_added_users = args[1:]
+    lost_users = args[1:]
 
     for username in users:
         sleep(3)
@@ -105,41 +105,44 @@ async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient)
                 Rules.get_entity,
                 lambda: event.respond(f"{username} has been added. Waiting for 2-5 seconds...")
             )
-            added_users.append(not_added_users.pop(0))
+            added_users.append(username)
+            lost_users.remove(username)
             sleep(random.randrange(2, 10))
 
+        #* skip on value error
         except ValueError as e:
             await event.respond(f"Cannot find: {username} --- {e};")
 
-
-        #! errors with privacy
-        except PeerFloodError:
-            await event.respond(f"{username} Getting flood error from telegram. Invating is stoping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
-            await event.respond(f"not added users: {not_added_users}")
-            await stop(event)
-            print("peer flood error")
-
-
+        #* skip on privacy error
         except UserPrivacyRestrictedError:
-            await event.respond("The user's privacy settings do not allow you to do this. Skipping.")
-            await event.respond(f"not added users: {not_added_users}")
-
+            await event.respond(f"[{username}] This user privacy settings do not allow you to do this. Skipping.")
             print("error user privacy restricted. Skip")
 
+        #? break on limit error
         except ErrorLimitCall as e:
             await event.respond(f"[{username}]: {e}")
-            await event.respond(f"not added users: {not_added_users}")
-
+            await event.respond(f"not added users: {lost_users}")
             break
 
+        #! stop server on critical Flood Error
+        except PeerFloodError as e:
+            await event.respond(f"{username} Getting flood error from telegram. Invating is stoping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
+            await event.respond(f"not added users: {lost_users}")
+            await stop(event)
+            print("peer flood error:", str(e))
+
+        #! stop server on unexpected error
         except Exception as e:
             await event.respond(f"Unexpected error at user: [{username}]. --- {e} --- server disconected")
-            await event.respond(f"not added users: {not_added_users}")
+            await event.respond(f"not added users: {lost_users}")
             await stop(event, client)
             print(e)
 
-
-    await event.respond(f"You entered these usernames: {added_users}")
+    msg = f"""
+    Succesefuly invited these usernames: {added_users}\n
+    {lost_users if lost_users.__len__() > 0 else "No lost users" }
+    added:{added_users.__len__()}; lost:{lost_users.__len__()} """
+    await event.respond(msg)
 
 
 async def stop(event, client):

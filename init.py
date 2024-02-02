@@ -7,7 +7,7 @@ __api_hash = '4f70d910d762a37ae6703e370f861a7a'
 __phone_number = '+380501061373'
 
 spam.add_rule(spam.Rules.message, 30, 1) # to different users per minute
-spam.add_rule(spam.Rules.get_entity, 20, 1)
+spam.add_rule(spam.Rules.get_entity, 3, 1)
 spam.add_rule(spam.Rules.invate, 100, 60 * 24) # invate per day
 
 client = TelegramClient(__phone_number, __api_id, __api_hash)
