@@ -1,14 +1,17 @@
+from telethon import TelegramClient
+from telethon.events import NewMessage
 from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest
 from telethon.tl.functions.messages import CreateChatRequest, AddChatUserRequest
 from telethon.errors.rpcerrorlist import PeerFloodError, UserPrivacyRestrictedError
 from telethon.tl.types import InputPeerChannel, InputPeerChat, Channel, Chat
+
 from time import sleep
 import random
 #* custom modules
 from shared import rules, stop
 import spam
 
-async def handle_usernames(event, client):
+async def handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
     group_name = args[0]
     users = args[1:]
@@ -43,7 +46,7 @@ async def handle_usernames(event, client):
 
         #! errors with privacy
         except PeerFloodError:
-            await event.respond(f"{username} Getting flood error from telegram. Invating is soping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
+            await event.respond(f"{username} Getting flood error from telegram. Invating is stoping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
             await stop(event)
             print("peer flood error")
 
@@ -60,7 +63,7 @@ async def handle_usernames(event, client):
 
     await event.respond(f"You entered these usernames: {users}")
 
-async def create_group(event, client):
+async def create_group(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
     group_name = args[0]
     users = args[1:]
@@ -70,7 +73,7 @@ async def create_group(event, client):
 
     await event.respond(f"Group '{group_name}' created with ID {newChat.chats[0].id}")
 
-async def create_channel(event, client):
+async def create_channel(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
     channel_name = args[0]
     about = ' '.join(args[1:])  # The rest of the arguments will be the channel's about text

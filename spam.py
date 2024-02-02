@@ -68,10 +68,13 @@ def add_rule(field, max_value, max_date):
 
 # Usage
 print("now:", str(datetime.datetime.now()))
-add_rule('send_invate', 3, 1)  # Add a new rule if it doesn't exist
 
-try:
-    call('send_invate')  # Increase the counter by one for 'a1'
-    print(read_data())  # Print the current data
-except ErrorLimitCall as e:
-    print(str(e))  # Print the error message if a limit error occurs
+
+#! testing usage
+# add_rule('send_invate', 3, 1)  # Add a new rule if it doesn't exist
+
+# try:
+#     call('send_invate')  # Increase the counter by one for 'a1'
+#     print(read_data())  # Print the current data
+# except ErrorLimitCall as e:
+#     print(str(e))  # Print the error message if a limit error occurs
