@@ -16,58 +16,6 @@ min_time_wait = 2
 max_time_wait = 5
 sleep_time = 3
 
-async def handle_usernames(event: NewMessage.Event, client: TelegramClient):
-    args = event.message.message.split()[1:]
-    group_name = args[0]
-    users = args[1:]
-
-    group = await client.get_entity(group_name)
-    print("group:", group)
-    if isinstance(group, Channel):
-        target_group_entity = InputPeerChannel(channel_id=group.id, access_hash=group.access_hash)
-    elif isinstance(group, Chat):
-        target_group_entity = InputPeerChat(chat_id=group.id)
-    else:
-        return await event.respond(f"Unknown group type: {type(group).__name__}")
-
-    for username in users:
-        sleep(3)
-        try:
-            user = await client.get_entity(username)
-            #? invate call
-            if isinstance(group, Channel):
-                await call(Rules.invate)
-                await client(InviteToChannelRequest(target_group_entity, [user]))
-            elif isinstance(group, Chat):
-                await call(Rules.invate)
-                await client(AddChatUserRequest(chat_id=group.id, user_id=user, fwd_limit=10))
-            #? invate call
-
-            await event.respond(f"{username} has been added. Waiting for 10-30 seconds...")
-            sleep(random.randrange(10, 30))
-
-        except ValueError as e:
-            await event.respond(f"Cannot find: {username} --- {e}")
-
-        #! errors with privacy
-        except PeerFloodError:
-            await event.respond(f"{username} Getting flood error from telegram. Invating is stoping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
-            await stop(event)
-            print("peer flood error")
-
-
-        except UserPrivacyRestrictedError:
-            await event.respond("The user's privacy settings do not allow you to do this. Skipping.")
-            print("error user privacy restricted. Skip")
-
-        except Exception as e:
-            await event.respond(f"Unexpected error at user: [{username}]. --- {e} --- server disconected")
-            await stop(event)
-            print(e)
-
-
-    await event.respond(f"You entered these usernames: {users}")
-
 async def create_group(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
     group_name = args[0]
@@ -96,12 +44,20 @@ async def create_channel(event: NewMessage.Event, client: TelegramClient):
 
 
 
+from telethon.tl.functions.channels import GetParticipantsRequest
+from telethon.tl.types import ChannelParticipantsSearch
+
 async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
 
     group_name = args[0]
-
     users = args[1:]
+
+    # Get the channel
+    try:
+        channel = await client.get_entity(group_name)
+    except Exception as e:
+        return await event.respond(str(e))
 
     added_users = []
     lost_users = args[1:]
@@ -114,14 +70,18 @@ async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient)
     please wait: {round(min_t, 1)} - {round(max_t, 1)} mins"""
 
     await event.respond(msg)
+
     for username in users:
         sleep(sleep_time)
         try:
-            #! write you solution here!
-            # await call(
-            #     Rules.get_entity,
-            #     lambda : print(f"{username} has been added. Waiting for 2-5 seconds...")
-            # )
+            user_to_add = await client.get_entity(username)
+            await call(
+                Rules.invate,
+                lambda: client(InviteToChannelRequest(channel, [user_to_add])),
+                is_async=True
+                )
+
+            print(f"{username} has been added. Waiting for 2-5 seconds...")
 
             added_users.append(username)
             lost_users.remove(username)

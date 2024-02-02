@@ -1,13 +1,13 @@
 from telethon import TelegramClient, events
-from patterns import test_handle_usernames, create_channel, create_group,  handle_usernames, stop
+from patterns import test_handle_usernames, create_channel, create_group, stop
 from spam import add_rule, Rules
 
 __api_id = '20921653'
 __api_hash = '4f70d910d762a37ae6703e370f861a7a'
 __phone_number = '+380501061373'
 
-add_rule(Rules.message, 30, 1) # to different users per minute
-add_rule(Rules.get_entity, 5, 1)
+# add_rule(Rules.message, 30, 1) # to different users per minute
+# add_rule(Rules.get_entity, 5, 1)
 add_rule(Rules.invate, 100, 60 * 24) # invate per day
 
 client = TelegramClient(__phone_number, __api_id, __api_hash)
