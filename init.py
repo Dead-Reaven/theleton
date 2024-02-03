@@ -12,7 +12,7 @@ add_rule(Rules.invite, 100, 60 * 24) # invate per day
 
 client = TelegramClient(__phone_number, __api_id, __api_hash)
 
-async def __message_checker(event):
+async def message_checker(event):
     print(event.message.message)
 
 def with_client(handler):
@@ -20,7 +20,7 @@ def with_client(handler):
 
 async def main():
     await client.start()
-    client.add_event_handler(__message_checker, events.NewMessage())
+    client.add_event_handler(message_checker, events.NewMessage())
 
     #* create
     client.add_event_handler(with_client(create_group), events.NewMessage(pattern="/create_group"))

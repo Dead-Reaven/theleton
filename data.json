@@ -1,1 +1,8 @@
-{"send_invate": {"counter": 0, "max_value": 100, "date_to_update": "2024-02-04 18:13:47.094388", "max_date": 1440}}
+{
+	"send_invate": {
+		"counter": 0,
+		"max_value": 100,
+		"date_to_update": "2024-02-04 18:13:47.094388",
+		"max_date": 1440
+	}
+}
