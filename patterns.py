@@ -1,9 +1,9 @@
 from telethon import TelegramClient
 from telethon.events import NewMessage
 from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest
-from telethon.tl.functions.messages import CreateChatRequest, AddChatUserRequest
+from telethon.tl.functions.messages import CreateChatRequest
 from telethon.errors.rpcerrorlist import PeerFloodError, UserPrivacyRestrictedError
-from telethon.tl.types import InputPeerChannel, InputPeerChat, Channel, Chat
+
 
 from time import sleep
 import random
@@ -16,36 +16,9 @@ min_time_wait = 2
 max_time_wait = 5
 sleep_time = 3
 
-async def create_group(event: NewMessage.Event, client: TelegramClient):
-    args = event.message.message.split()[1:]
-    group_name = args[0]
-    users = args[1:]
-
-    user_entities = [await client.get_entity(username) for username in users]
-    newChat = await client(CreateChatRequest(users=user_entities, title=group_name))
-
-    await event.respond(f"Group '{group_name}' created with ID {newChat.chats[0].id}")
-
-async def create_channel(event: NewMessage.Event, client: TelegramClient):
-    args = event.message.message.split()[1:]
-    channel_name = args[0]
-    about = ' '.join(args[1:])  # The rest of the arguments will be the channel's about text
-
-    # Create the channel
-    result = await client(CreateChannelRequest(
-        title=channel_name,
-        about=about,
-        megagroup=True  # Set this to True to create a supergroup
-    ))
-
-    # Respond with the created channel's ID
-    await event.respond(f"Channel '{channel_name}' created with ID {result.chats[0].id}")
 
 
-
-
-from telethon.tl.functions.channels import GetParticipantsRequest
-from telethon.tl.types import ChannelParticipantsSearch
+#TODO: fix issue with inviting to private channel
 
 async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
@@ -76,7 +49,7 @@ async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient)
         try:
             user_to_add = await client.get_entity(username)
             await call(
-                Rules.invate,
+                Rules.invite,
                 lambda: client(InviteToChannelRequest(channel, [user_to_add])),
                 is_async=True
                 )
@@ -123,6 +96,30 @@ async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient)
     added:{added_users.__len__()}; lost:{lost_users.__len__()} """
     await event.respond(msg)
 
+async def create_group(event: NewMessage.Event, client: TelegramClient):
+    args = event.message.message.split()[1:]
+    group_name = args[0]
+    users = args[1:]
+
+    user_entities = [await client.get_entity(username) for username in users]
+    newChat = await client(CreateChatRequest(users=user_entities, title=group_name))
+
+    await event.respond(f"Group '{group_name}' created with ID {newChat.chats[0].id}")
+
+async def create_channel(event: NewMessage.Event, client: TelegramClient):
+    args = event.message.message.split()[1:]
+    channel_name = args[0]
+    about = ' '.join(args[1:])  # The rest of the arguments will be the channel's about text
+
+    # Create the channel
+    result = await client(CreateChannelRequest(
+        title=channel_name,
+        about=about,
+        megagroup=True  # Set this to True to create a supergroup
+    ))
+
+    # Respond with the created channel's ID
+    await event.respond(f"Channel '{channel_name}' created with ID {result.chats[0].id}")
 
 async def stop(event, client):
     await client.disconnect()

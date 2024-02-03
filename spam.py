@@ -6,7 +6,7 @@ json_file = 'data.json'
 
 class Rules:
   message = 'send_message'
-  invate = 'send_invate'
+  invite = 'send_invate'
   get_entity = 'get_entity'
 
 # Custom exception class for limit errors

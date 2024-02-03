@@ -8,7 +8,7 @@ __phone_number = '+380501061373'
 
 # add_rule(Rules.message, 30, 1) # to different users per minute
 # add_rule(Rules.get_entity, 5, 1)
-add_rule(Rules.invate, 100, 60 * 24) # invate per day
+add_rule(Rules.invite, 100, 60 * 24) # invate per day
 
 client = TelegramClient(__phone_number, __api_id, __api_hash)
 
