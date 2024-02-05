@@ -1,2 +1,1 @@
 Telethon==1.33.1
-python-3.9

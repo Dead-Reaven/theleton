@@ -9,16 +9,12 @@ from time import sleep
 import random
 #* custom modules
 
-from spam import Rules, call, ErrorLimitCall
+from state import Rules, call, ErrorLimitCall
 
 #per each iteration
 min_time_wait = 2
 max_time_wait = 5
 sleep_time = 3
-
-
-
-#TODO: fix issue with inviting to private channel
 
 async def test_handle_usernames(event: NewMessage.Event, client: TelegramClient):
     args = event.message.message.split()[1:]
