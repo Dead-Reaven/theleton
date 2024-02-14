@@ -1,18 +1,15 @@
 from telethon import TelegramClient
 from telethon.events import NewMessage
-from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest
+from telethon.tl.functions.channels import EditAdminRequest, InviteToChannelRequest, CreateChannelRequest, GetParticipantsRequest
 from telethon.tl.functions.messages import CreateChatRequest
 from telethon.errors.rpcerrorlist import PeerFloodError, UserPrivacyRestrictedError
-from telethon.tl.functions.channels import EditAdminRequest
-from telethon.tl.types import ChatAdminRights
-
+from telethon.tl.types import ChatAdminRights, ChannelParticipantsSearch
 
 from time import sleep
 import random
 #* custom modules
 #! тимчасово не використовується так як не вдається стабільно додавати (можна ігнорувати цей модуль)
 from state import Rules, call, ErrorLimitCall
-
 from dotenv import load_dotenv
 import os
 
@@ -25,15 +22,25 @@ SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
 
 # Assuming 'user_to_add' is the user you added and want to promote
 # and 'channel' is the entity of the channel where you want to add the admin
-rights = ChatAdminRights(invite_users=True)
-remove_right = ChatAdminRights(invite_users=False)
+
+#* super invite
+# await client(EditAdminRequest(channel, user_to_add, rights, 'to_remove'))
+# sleep(5)
+# print(f"{username} add as admin req send")
+#* remove req
+# await client(EditAdminRequest(channel, user_to_add, remove_right, 'to_remove'))
+# print(f"{username} remove admin req send")
+# rights = ChatAdminRights(invite_users=True)
+# remove_right = ChatAdminRights(invite_users=False)
 
 async def admin(event: NewMessage.Event, client: TelegramClient):
+    global MIN_TIME_WAIT, MAX_TIME_WAIT, SLEEP_TIME
     args = event.message.message.split()[1:]
-
     group_name = args[0]
     users = args[1:]
+
     counter = 0
+    flood_counter = 0
     # Get the channel
     try:
         channel = await client.get_entity(group_name)
@@ -41,8 +48,7 @@ async def admin(event: NewMessage.Event, client: TelegramClient):
         return await event.respond(str(e))
 
     await event.respond(f"🔍 start ...\n inviting {len(users)} users ... ")
-    # responce = await check_users(event, client)
-    # users = responce.lost_users
+
 
     l = len(users)
     #calc minuts
@@ -53,45 +59,50 @@ async def admin(event: NewMessage.Event, client: TelegramClient):
     please wait: {round(min_t, 1)} - {round(max_t, 1)} mins"""
 
     await event.respond(msg)
+
+    users_entity = []
     i = 0
     for username in users:
         i += 1
         sleep(random.randrange(MIN_TIME_WAIT, MAX_TIME_WAIT) if i > 1 else 0)
+        # sleep(3)
         try:
             user_to_add = await client.get_entity(username)
-            sleep(2)
+            users_entity.append(user_to_add)
+            print(f"add [{username}] join list")
+            # sleep(3)
             #*sample invite
-            # await client(InviteToChannelRequest(channel, [user_to_add]))
-            #* super invite
-            await client(EditAdminRequest(channel, user_to_add, rights, 'to_remove'))
-            sleep(5)
-            print(f"{username} add as admin req send")
-            #* remove req
-            await client(EditAdminRequest(channel, user_to_add, remove_right, 'to_remove'))
-            print(f"{username} remove admin req send")
-
-            print(f"next... please wait")
-            counter += 1
+            # print(f"[{username}] invite send. next... please wait")
+            # counter += 1
 
         #* skip on value error
         except ValueError as e:
-            await event.respond(f"Cannot find: {username} --- {e};")
+            # await event.respond(f"Cannot find: {username} --- {e};")
+            print(f"Cannot find: {username} --- {e};")
 
         #* skip on privacy error
         except UserPrivacyRestrictedError as e:
-            await event.respond(f"[{username}] {str(e)}")
+            # await event.respond(f"[{username}] {str(e)}")
             print(f"[{username}] {str(e)}: error user privacy restricted.  Skip")
 
         #? break on limit error
         except ErrorLimitCall as e:
             await event.respond(f"[{username}]: {e}")
+            print(f"[{username}]: {e}")
             break
 
         #! stop server on critical Flood Error
         except PeerFloodError as e:
             await event.respond(f"{username} - err: {str(e)}; Getting flood error from telegram. Invating is stoping now. Please, try run later. Reccomend await 1-3 hour or better one day to prevent ban")
-            await stop(event, client)
-            print("peer flood error:", str(e))
+            flood_counter += 1
+            if flood_counter > 2:
+                await stop(event, client)
+            else:
+                MIN_TIME_WAIT += 5
+                MAX_TIME_WAIT += 10
+
+
+            print(f"peer flood error [{flood_counter}]:", str(e))
 
         #! stop server on unexpected error
         except Exception as e:
@@ -105,6 +116,19 @@ async def admin(event: NewMessage.Event, client: TelegramClient):
                 await event.respond(f"{str(e)}")
             print(e)
 
+    print("--- Sleep before invite to channel request--- \n")
+    sleep(10)
+    try:
+        result = await client(InviteToChannelRequest(channel, users_entity))
+        participants_usernames = [participant.__dict__ for participant in result.users]
+        print(participants_usernames)
+
+    except Exception as e:
+        await event.respond(f"Error on invite list: {e}")
+        print(e)
+
+    await check(event, client, channel, users)
+
     # *finally massage responce
     # responce = await check_users(event, client)
 
@@ -114,6 +138,30 @@ async def admin(event: NewMessage.Event, client: TelegramClient):
 async def stop(event, client):
     await event.respond(f"--- server disconected ---")
     await client.disconnect()
+
+
+async def check(event, client, channel, users_to_check):
+
+    channel = await client.get_entity(channel)
+    participants = await client(GetParticipantsRequest(
+        channel, ChannelParticipantsSearch(''), offset=0, limit=500, hash=0
+    ))
+    participants_usernames = [participant.username for participant in participants.users]
+    print(participants.users)
+
+    add = []
+    lost = []
+    for user in users_to_check:
+        if user in participants_usernames:
+            print(f"{user} is a participant in the channel")
+            add.append(user)
+        else:
+            print(f"{user} is not a participant in the channel")
+            lost.append(user)
+
+    print(f"add {len(add)} users")
+    print(f"lost {len(lost)} users")
+    await event.respond(f"add {len(add)} users\nlost {len(lost)} users")
 
 # methods to check users automaticly
 # removed to another bot:https://t.me/Test_Remover_Bot
